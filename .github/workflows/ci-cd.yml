@@ -49,14 +49,10 @@ jobs:
         env:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
         run: |
-          docker run --rm `
-            -e SONAR_TOKEN=$env:SONAR_TOKEN `
-            -v "${{ github.workspace }}:/usr/src" `
-            -w /usr/src `
-            sonarsource/sonar-scanner-cli:latest `
-            -Dsonar.host.url=${{ env.SONAR_HOST_URL }} `
-            -Dproject.settings=sonar-project.properties `
-            -Dsonar.token=$env:SONAR_TOKEN
+          powershell -ExecutionPolicy Bypass -File .github/scripts/run-sonar.ps1 `
+            -SonarHostUrl "${{ env.SONAR_HOST_URL }}" `
+            -SonarToken "$env:SONAR_TOKEN" `
+            -Workspace "${{ github.workspace }}"
 
   build-and-deploy:
     name: Build and Start Containers
