@@ -54,7 +54,9 @@ jobs:
             -v "${{ github.workspace }}:/usr/src" `
             -w /usr/src `
             sonarsource/sonar-scanner-cli:latest `
-            sonar-scanner -Dsonar.host.url=${{ env.SONAR_HOST_URL }} -Dproject.settings=sonar-project.properties -Dsonar.token=$env:SONAR_TOKEN
+            -Dsonar.host.url=${{ env.SONAR_HOST_URL }} `
+            -Dproject.settings=sonar-project.properties `
+            -Dsonar.token=$env:SONAR_TOKEN
 
   build-and-deploy:
     name: Build and Start Containers
