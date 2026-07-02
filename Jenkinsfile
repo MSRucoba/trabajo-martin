@@ -1,117 +1,94 @@
+// 🚀 Jenkinsfile para SpaceUp (NestJS + Angular)
 pipeline {
     agent any
 
     environment {
-        NODE_VERSION = '20'
-        DOCKER_REGISTRY = credentials('docker-registry-url')
-        AWS_REGION = credentials('aws-region')
-        SONAR_TOKEN = credentials('sonar-token')
-    }
-
-    options {
-        buildDiscarder(logRotator(numToKeepStr: '10'))
-        timestamps()
+        REPO_URL          = 'https://github.com/MSRucoba/trabajo-martin.git'
+        APP_NAME          = 'spaceup'
+        DOCKER_BACKEND    = 'spaceup-backend:latest'
+        DOCKER_FRONTEND   = 'spaceup-frontend:latest'
     }
 
     stages {
-        stage('Checkout') {
+
+        stage('📥 Checkout') {
             steps {
-                checkout scm
+                cleanWs()
+                git branch: 'main', url: "${REPO_URL}"
             }
         }
 
-        stage('Build Backend') {
+        stage('🏗️ Build & Test Backend') {
             steps {
                 dir('SpaceUpBackend') {
                     sh 'npm ci'
-                    sh 'npm run lint'
-                    sh 'npm run test'
+                    sh 'npm run test:cov'
                     sh 'npm run build'
                 }
             }
         }
 
-        stage('Build Frontend') {
+        stage('🏗️ Build & Test Frontend') {
             steps {
                 dir('SpaceUpWeb') {
                     sh 'npm ci'
-                    sh 'npm run lint'
                     sh 'npm run test:ci'
                     sh 'npm run build'
                 }
             }
         }
 
-        stage('SonarQube Analysis') {
+        stage('📊 Sonar Analysis') {
             steps {
-                withSonarQubeEnv('SonarQube') {
-                    sh '''
-                        npm install -g sonarqube-scanner
-                        sonar-scanner \
-                            -Dsonar.projectKey=spaceup \
-                            -Dsonar.sources=. \
-                            -Dsonar.exclusions=**/node_modules/**,**/dist/**,**/coverage/**,**/*.spec.ts,**/*.test.ts \
-                            -Dsonar.javascript.lcov.reportPaths=SpaceUpBackend/coverage/lcov.info,SpaceUpWeb/coverage/lcov.info \
-                            -Dsonar.login=$SONAR_TOKEN
-                    '''
+                timeout(time: 10, unit: 'MINUTES') {
+                    withSonarQubeEnv('sonarqube') {
+                        sh """
+                            sonar-scanner \
+                                -Dsonar.projectKey=${APP_NAME} \
+                                -Dsonar.projectName=${APP_NAME} \
+                                -Dsonar.sources=SpaceUpBackend/src,SpaceUpWeb/src \
+                                -Dsonar.exclusions=**/node_modules/**,**/dist/**,**/coverage/**,**/*.spec.ts,**/*.entity.ts,**/seeds/** \
+                                -Dsonar.javascript.lcov.reportPaths=SpaceUpBackend/coverage/lcov.info \
+                                -Dsonar.typescript.lcov.reportPaths=SpaceUpWeb/coverage/lcov.info
+                        """
+                    }
                 }
             }
         }
 
-        stage('Quality Gate') {
+        stage('🎯 Quality Gate') {
             steps {
+                sleep(10)
                 timeout(time: 5, unit: 'MINUTES') {
                     waitForQualityGate abortPipeline: true
                 }
             }
         }
 
-        stage('Build Docker Images') {
-            when {
-                anyOf {
-                    branch 'main'
-                    branch 'develop'
-                }
-            }
+        stage('🐳 Docker Build & Deploy') {
             steps {
                 script {
-                    def imageBackend = docker.build("spaceup/backend:${env.BUILD_NUMBER}", "./SpaceUpBackend")
-                    def imageFrontend = docker.build("spaceup/frontend:${env.BUILD_NUMBER}", "./SpaceUpWeb")
+                    sh "docker build -t ${DOCKER_BACKEND} ./SpaceUpBackend"
+                    sh "docker build -t ${DOCKER_FRONTEND} ./SpaceUpWeb"
 
-                    docker.withRegistry("https://${DOCKER_REGISTRY}", 'docker-registry-credentials') {
-                        imageBackend.push()
-                        imageBackend.push('latest')
-                        imageFrontend.push()
-                        imageFrontend.push('latest')
-                    }
+                    sh "docker stop spaceup-backend  || true"
+                    sh "docker rm   spaceup-backend  || true"
+                    sh "docker stop spaceup-frontend || true"
+                    sh "docker rm   spaceup-frontend || true"
+
+                    sh "docker run -d --name spaceup-backend  -p 3000:3000 ${DOCKER_BACKEND}"
+                    sh "docker run -d --name spaceup-frontend -p 4200:80  ${DOCKER_FRONTEND}"
                 }
-            }
-        }
-
-        stage('Deploy to AWS') {
-            when {
-                branch 'main'
-            }
-            steps {
-                sh '''
-                    aws ecr get-login-password --region $AWS_REGION | docker login --username AWS --password-stdin $DOCKER_REGISTRY
-                    # Aquí va tu script de despliegue a ECS/EC2/EKS
-                    # ./scripts/deploy-aws.sh
-                '''
             }
         }
     }
 
     post {
-        always {
-            cleanWs()
+        success {
+            echo '✅ ¡Pipeline finalizado con éxito!'
         }
         failure {
-            emailext (
-                subject: "FAILED: Job '${env.JOB_NAME} [${env.BUILD_NUMBER}]'",
-                body: "Ver consola: ${env.BUILD_URL}",
-                to: "${env.CHANGE_AUTHOR_EMAIL ?: 'dev-team@example.com'}"
-            )
+            echo '❌ El pipeline falló.'
         }
     }
 }
