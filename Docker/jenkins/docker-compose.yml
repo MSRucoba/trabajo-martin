@@ -1,0 +1,21 @@
+version: '3.8'
+
+services:
+  jenkins:
+    container_name: jenkins
+    build:
+      context: ./jenkins-docker-image
+      dockerfile: Dockerfile
+    image: my-custom-jenkins
+    volumes:
+      - ./jenkins_home:/var/jenkins_home
+      - /var/run/docker.sock:/var/run/docker.sock
+    ports:
+      - "9080:8080"
+    networks:
+      - backend
+    restart: unless-stopped
+
+networks:
+  backend:
+    name: network_jenkins

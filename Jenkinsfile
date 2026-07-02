@@ -16,20 +16,6 @@ pipeline {
             }
         }
 
-        stage('Setup Node.js') {
-            steps {
-                sh '''
-                    # Instalar Node.js 20 si no existe
-                    if ! command -v node &> /dev/null; then
-                        curl -fsSL https://deb.nodesource.com/setup_20.x | bash -
-                        apt-get install -y nodejs
-                    fi
-                    node --version
-                    npm --version
-                '''
-            }
-        }
-
         stage('Build & Test Backend') {
             steps {
                 dir('SpaceUpBackend') {
@@ -54,19 +40,15 @@ pipeline {
             steps {
                 timeout(time: 10, unit: 'MINUTES') {
                     withSonarQubeEnv('sonarqube') {
-                        sh '''
-                            # Instalar sonar-scanner si no existe
-                            if ! command -v sonar-scanner &> /dev/null; then
-                                npm install -g sonarqube-scanner
-                            fi
+                        sh """
                             sonar-scanner \
-                                -Dsonar.projectKey=spaceup \
-                                -Dsonar.projectName=spaceup \
+                                -Dsonar.projectKey=${APP_NAME} \
+                                -Dsonar.projectName=${APP_NAME} \
                                 -Dsonar.sources=SpaceUpBackend/src,SpaceUpWeb/src \
                                 -Dsonar.exclusions=**/node_modules/**,**/dist/**,**/coverage/**,**/*.spec.ts,**/*.entity.ts,**/seeds/** \
                                 -Dsonar.javascript.lcov.reportPaths=SpaceUpBackend/coverage/lcov.info \
                                 -Dsonar.typescript.lcov.reportPaths=SpaceUpWeb/coverage/lcov.info
-                        '''
+                        """
                     }
                 }
             }

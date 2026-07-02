@@ -92,9 +92,28 @@
       "^.+\\.(t|j)s$": "ts-jest"
     },
     "collectCoverageFrom": [
-      "**/*.(t|j)s"
+      "**/*.(t|j)s",
+      "!**/*.spec.(t|j)s",
+      "!**/*.module.ts",
+      "!**/main.ts",
+      "!**/database/seeds/**",
+      "!**/*.entity.ts"
     ],
     "coverageDirectory": "../coverage",
+    "coverageReporters": [
+      "lcov",
+      "text",
+      "text-summary",
+      "clover"
+    ],
+    "coverageThresholds": {
+      "global": {
+        "statements": 50,
+        "branches": 40,
+        "functions": 50,
+        "lines": 50
+      }
+    },
     "testEnvironment": "node",
     "moduleNameMapper": {
       "^src/(.*)$": "<rootDir>/$1"
