@@ -7,7 +7,7 @@ on:
     branches: [main, develop]
 
 env:
-  NODE_BACKEND: '20'
+  NODE_BACKEND: '24'
   NODE_FRONTEND: '18'
   AWS_REGION: us-east-1
   IMAGE_BACKEND: spaceup-backend
@@ -98,14 +98,9 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Download backend coverage
-        uses: actions/download-artifact@v4
-        with:
-          name: backend-coverage
-          path: SpaceUpBackend/coverage
-
       - name: Download frontend coverage
         uses: actions/download-artifact@v4
+        continue-on-error: true
         with:
           name: frontend-coverage
           path: SpaceUpWeb/coverage
