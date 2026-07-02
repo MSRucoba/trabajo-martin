@@ -1,0 +1,110 @@
+<div class="estacionamientos" *ngIf="!loading; else loadingTpl">
+  <h2>Monitoreo de Estacionamientos</h2>
+  <p class="sub">
+    Monitorea estacionamientos, cupos disponibles, ocupación y tipos de cupos
+  </p>
+
+  <div class="top-cards">
+    <div class="card purple">
+      <i class="fas fa-building"></i>
+      <div>
+        <h3>{{ totalEstacionamientos }}</h3>
+        <p>Total Estacionamientos</p>
+      </div>
+    </div>
+
+    <div class="card gray">
+      <i class="fas fa-parking"></i>
+      <div>
+        <h3>{{ totalCupos }}</h3>
+        <p>Total Cupos</p>
+      </div>
+    </div>
+
+    <div class="card orange">
+      <i class="fas fa-hourglass-half"></i>
+      <div>
+        <h3>{{ totalOcupados }}</h3>
+        <p>Ocupados</p>
+      </div>
+    </div>
+
+    <div class="card green">
+      <i class="fas fa-check-circle"></i>
+      <div>
+        <h3>{{ totalDisponibles }}</h3>
+        <p>Disponibles</p>
+      </div>
+    </div>
+
+    <div class="card blue">
+      <i class="fas fa-chart-line"></i>
+      <div>
+        <h3>{{ porcentajeOcupacion }}%</h3>
+        <p>% Ocupación</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="estacionamientos-card">
+    <div class="item" *ngFor="let est of estacionamientos"
+      [style.borderColor]="obtenerColorPorcentaje(calcularPorcentaje(est))">
+      <div class="header">
+        <h4>{{ est.nombre }}</h4>
+        <span class="badge" [style.background]="obtenerColorPorcentaje(calcularPorcentaje(est))">
+          {{ calcularPorcentaje(est) }}% Ocupación
+        </span>
+      </div>
+
+      <p class="detalle">
+        {{ calcularOcupados(est) }} de {{ est.cupos_totales }} cupos ocupados
+      </p>
+
+      <div class="progress-bar">
+        <div class="progress" [style.width.%]="calcularPorcentaje(est)"
+          [style.background]="obtenerColorPorcentaje(calcularPorcentaje(est))"></div>
+      </div>
+
+      <div class="leyenda-tipos">
+        <div class="leyenda">
+          <span class="ocupado">
+            <i class="fas fa-circle"></i> Ocupados:
+            <strong>{{ calcularOcupados(est) }}</strong>
+          </span>
+          <span class="disponible">
+            <i class="fas fa-circle"></i> Disponibles:
+            <strong>{{ est.cupos_disponibles }}</strong>
+          </span>
+        </div>
+
+        <div class="tipos" *ngIf="est.cuposVehiculo?.length">
+          <ng-container *ngFor="let c of est.cuposVehiculo">
+            <span class="tipo">
+              <span class="circle"></span>
+              {{ c.tipo_vehiculo }}:
+              <strong>{{ c.cupos_disponibles }}/{{ c.cupos_totales }}</strong>
+            </span>
+          </ng-container>
+        </div>
+      </div>
+    </div>
+
+    <div class="paginacion">
+      <button [disabled]="paginaActual === 1" (click)="cambiarPagina(-1)">
+        <i class="fas fa-chevron-left"></i>
+      </button>
+      <div class="page-info">
+        Página {{ paginaActual }}
+      </div>
+      <button [disabled]="paginaActual >= totalPaginas" (click)="cambiarPagina(1)">
+        <i class="fas fa-chevron-right"></i>
+      </button>
+    </div>
+  </div>
+</div>
+
+<app-boton-reporte [vista]="'estacionamientos'"></app-boton-reporte>
+
+<ng-template #loadingTpl>
+  <div class="loading">Cargando estacionamientos...</div>
+</ng-template>

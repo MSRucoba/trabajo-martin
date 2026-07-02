@@ -1,0 +1,102 @@
+<div class="pagos">
+  <h2>Gestión de Pagos y Facturación</h2>
+  <p class="sub">Administra pagos y monitorea los ingresos del sistema</p>
+
+  <div class="cards">
+    <div class="card purple">
+      <h4>Total Ingresos</h4>
+      <h2>S/{{ totalIngresos | number:'1.2-2' }}</h2>
+    </div>
+
+    <div class="card green">
+      <h4>Pagados</h4>
+      <h2>{{ totalPagados }}</h2>
+    </div>
+
+    <div class="card orange">
+      <h4>Pendientes</h4>
+      <h2>{{ totalPendientes }}</h2>
+    </div>
+
+    <div class="card violet">
+      <h4>Transacciones</h4>
+      <h2>{{ totalTransacciones }}</h2>
+    </div>
+  </div>
+
+  <div class="card-table">
+    <h3>Transacciones Recientes</h3>
+    <div class="tabla">
+      <table>
+        <thead>
+          <tr>
+            <th>Factura</th>
+            <th>Cliente</th>
+            <th>Monto</th>
+            <th>Método</th>
+            <th>Fecha</th>
+            <th>Estado</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let p of pagos">
+            <td>{{ obtenerFactura(p) }}</td>
+            <td>{{ obtenerNombreCliente(p) }}</td>
+            <td class="monto">S/{{ (p.monto | number:'1.2-2') }}</td>
+            <td>{{ p.metodo || 'Tarjeta' }}</td>
+            <td>{{ p.fechaPago | date:'yyyy-MM-dd' }}</td>
+            <td>
+              <span class="estado" [style.background]="getEstadoColor(p.status)">
+                {{
+                p.status === 'succeeded'
+                ? 'Pagado'
+                : p.status === 'pending'
+                ? 'Pendiente'
+                : 'Fallido'
+                }}
+              </span>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="paginacion">
+      <button [disabled]="paginaActual === 1" (click)="cambiarPagina(-1)">
+        <i class="fas fa-chevron-left"></i>
+      </button>
+      <div class="page-info">
+        Página {{ paginaActual }}
+      </div>
+      <button [disabled]="paginaActual >= totalPaginas" (click)="cambiarPagina(1)">
+        <i class="fas fa-chevron-right"></i>
+      </button>
+    </div>
+  </div>
+
+  <div class="grafico">
+    <div class="grafico-header">
+      <h3>Evolución de Ingresos (S/)</h3>
+      <div class="toggle-buttons">
+        <button 
+          class="toggle-btn" 
+          [class.active]="vistaGrafico === 'mensual'"
+          (click)="cambiarVistaGrafico('mensual')">
+          <i class="fas fa-calendar-alt"></i>
+          Por Meses
+        </button>
+        <button 
+          class="toggle-btn" 
+          [class.active]="vistaGrafico === 'diaria'"
+          (click)="cambiarVistaGrafico('diaria')">
+          <i class="fas fa-calendar-day"></i>
+          Por Días
+        </button>
+      </div>
+    </div>
+    <canvas baseChart [data]="ingresosMensuales" [options]="opcionesGrafico" [type]="'line'">
+    </canvas>
+  </div>
+</div>
+
+<app-boton-reporte [vista]="'pagos'"></app-boton-reporte>

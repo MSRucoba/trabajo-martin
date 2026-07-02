@@ -1,0 +1,180 @@
+name: SpaceUp CI/CD
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main, develop]
+
+env:
+  NODE_BACKEND: '20'
+  NODE_FRONTEND: '18'
+  AWS_REGION: us-east-1
+  IMAGE_BACKEND: spaceup-backend
+  IMAGE_FRONTEND: spaceup-frontend
+
+jobs:
+  # ============================================
+  # CI: Lint + Tests + Build
+  # ============================================
+  ci-backend:
+    name: CI Backend
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ./SpaceUpBackend
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_BACKEND }}
+          cache: 'npm'
+          cache-dependency-path: SpaceUpBackend/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Test
+        run: npm run test -- --coverage
+
+      - name: Build
+        run: npm run build
+
+      - name: Upload coverage
+        uses: actions/upload-artifact@v4
+        with:
+          name: backend-coverage
+          path: SpaceUpBackend/coverage
+
+  ci-frontend:
+    name: CI Frontend
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ./SpaceUpWeb
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_FRONTEND }}
+          cache: 'npm'
+          cache-dependency-path: SpaceUpWeb/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Test
+        run: npm run test:ci
+
+      - name: Build
+        run: npm run build
+
+      - name: Upload coverage
+        uses: actions/upload-artifact@v4
+        with:
+          name: frontend-coverage
+          path: SpaceUpWeb/coverage
+
+  # ============================================
+  # SonarQube Scan
+  # ============================================
+  sonar:
+    name: SonarQube Analysis
+    needs: [ci-backend, ci-frontend]
+    runs-on: ubuntu-latest
+    if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Download backend coverage
+        uses: actions/download-artifact@v4
+        with:
+          name: backend-coverage
+          path: SpaceUpBackend/coverage
+
+      - name: Download frontend coverage
+        uses: actions/download-artifact@v4
+        with:
+          name: frontend-coverage
+          path: SpaceUpWeb/coverage
+
+      - name: SonarQube Scan
+        uses: SonarSource/sonarqube-scan-action@v4
+        env:
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+        with:
+          args: >
+            -Dsonar.projectKey=spaceup
+            -Dsonar.organization=${{ secrets.SONAR_ORGANIZATION }}
+            -Dsonar.host.url=${{ secrets.SONAR_HOST_URL }}
+            -Dsonar.typescript.lcov.reportPaths=SpaceUpWeb/coverage/lcov.info
+            -Dsonar.javascript.lcov.reportPaths=SpaceUpBackend/coverage/lcov.info
+
+  # ============================================
+  # CD: Build Docker + Push to ECR + Deploy
+  # ============================================
+  cd:
+    name: Deploy to AWS
+    needs: [ci-backend, ci-frontend, sonar]
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main'
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Login to Amazon ECR
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v2
+
+      - name: Set ECR registry
+        id: ecr-registry
+        run: echo "registry=${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ env.AWS_REGION }}.amazonaws.com" >> $GITHUB_OUTPUT
+
+      - name: Build and push backend
+        env:
+          ECR_REGISTRY: ${{ steps.ecr-registry.outputs.registry }}
+          IMAGE_TAG: ${{ github.sha }}
+        run: |
+          docker build -t $ECR_REGISTRY/$IMAGE_BACKEND:$IMAGE_TAG ./SpaceUpBackend
+          docker push $ECR_REGISTRY/$IMAGE_BACKEND:$IMAGE_TAG
+          docker tag $ECR_REGISTRY/$IMAGE_BACKEND:$IMAGE_TAG $ECR_REGISTRY/$IMAGE_BACKEND:latest
+          docker push $ECR_REGISTRY/$IMAGE_BACKEND:latest
+
+      - name: Build and push frontend
+        env:
+          ECR_REGISTRY: ${{ steps.ecr-registry.outputs.registry }}
+          IMAGE_TAG: ${{ github.sha }}
+        run: |
+          docker build -t $ECR_REGISTRY/$IMAGE_FRONTEND:$IMAGE_TAG ./SpaceUpWeb
+          docker push $ECR_REGISTRY/$IMAGE_FRONTEND:$IMAGE_TAG
+          docker tag $ECR_REGISTRY/$IMAGE_FRONTEND:$IMAGE_TAG $ECR_REGISTRY/$IMAGE_FRONTEND:latest
+          docker push $ECR_REGISTRY/$IMAGE_FRONTEND:latest
+
+      - name: Deploy to ECS (example)
+        env:
+          ECR_REGISTRY: ${{ steps.ecr-registry.outputs.registry }}
+          IMAGE_TAG: ${{ github.sha }}
+        run: |
+          echo "Desplegando en AWS..."
+          # aws ecs update-service --cluster spaceup-cluster --service spaceup-backend --force-new-deployment
+          # aws ecs update-service --cluster spaceup-cluster --service spaceup-frontend --force-new-deployment
+          # O ejecutar script de despliegue:
+          # ./scripts/deploy-aws.sh $ECR_REGISTRY $IMAGE_TAG

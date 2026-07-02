@@ -1,0 +1,111 @@
+<div class="container">
+    <h2 class="page-title">Gestión de Tipos de Vehículos y Servicios</h2>
+
+    <div class="cards">
+        <div class="card">
+            <div class="card-header">
+                <h3>Tipos de Vehículo</h3>
+                <button class="btn-add" (click)="abrirModal('vehiculo')">
+                    <i class="fa fa-plus"></i> Nuevo
+                </button>
+            </div>
+
+            <table>
+                <thead>
+                    <tr>
+                        <th>#</th>
+                        <th>Nombre</th>
+                        <th>Acciones</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr *ngFor="let item of paginatedTipoVehiculo; let i = index">
+                        <td>{{ (pageVehiculo - 1) * itemsPerPage + i + 1 }}</td>
+                        <td>{{ item.nombre }}</td>
+                        <td class="actions">
+                            <button class="btn-edit" (click)="abrirModal('vehiculo', true, item)">
+                                <i class="fa fa-pen"></i>
+                            </button>
+                            <button class="btn-delete" (click)="eliminar('vehiculo', item.id)">
+                                <i class="fa fa-trash"></i>
+                            </button>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+
+            <div class="paginacion">
+                <button (click)="prevPage('vehiculo')" [disabled]="pageVehiculo === 1">
+                    <i class="fas fa-chevron-left"></i>
+                </button>
+                <div class="page-info">
+                    Página {{ pageVehiculo }}
+                </div>
+                <button (click)="nextPage('vehiculo')" [disabled]="pageVehiculo === totalPages(tipoVehiculoList)">
+                    <i class="fas fa-chevron-right"></i>
+                </button>
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="card-header">
+                <h3>Servicios</h3>
+                <button class="btn-add" (click)="abrirModal('servicio')">
+                    <i class="fa fa-plus"></i> Nuevo
+                </button>
+            </div>
+
+            <table>
+                <thead>
+                    <tr>
+                        <th>#</th>
+                        <th>Nombre</th>
+                        <th>Acciones</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr *ngFor="let item of paginatedServicio; let i = index">
+                        <td>{{ (pageServicio - 1) * itemsPerPage + i + 1 }}</td>
+                        <td>{{ item.nombre }}</td>
+                        <td class="actions">
+                            <button class="btn-edit" (click)="abrirModal('servicio', true, item)">
+                                <i class="fa fa-pen"></i>
+                            </button>
+                            <button class="btn-delete" (click)="eliminar('servicio', item.id_servicio)">
+                                <i class="fa fa-trash"></i>
+                            </button>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+
+            <div class="paginacion">
+                <button (click)="prevPage('servicio')" [disabled]="pageServicio === 1">
+                    <i class="fas fa-chevron-left"></i>
+                </button>
+                <div class="page-info">
+                    Página {{ pageServicio }}
+                </div>
+                <button (click)="nextPage('servicio')" [disabled]="pageServicio === totalPages(servicioList)">
+                    <i class="fas fa-chevron-right"></i>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal-backdrop" *ngIf="showModal" (click)="cerrarModal()">
+        <div class="modal" (click)="$event.stopPropagation()">
+            <h3>{{ modalTitle }}</h3>
+            <input type="text" placeholder="Nombre" [(ngModel)]="nombreInput" maxlength="50" />
+
+            <div class="modal-actions">
+                <button class="btn-cancel" (click)="cerrarModal()">Cancelar</button>
+                <button class="btn-save" (click)="guardarCambios()">Guardar</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="alert" *ngIf="showAlert" [ngClass]="alertType">
+        {{ alertMessage }}
+    </div>
+</div>

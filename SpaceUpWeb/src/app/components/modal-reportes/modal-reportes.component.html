@@ -1,0 +1,27 @@
+<div class="modal-overlay" (click)="cerrarModal()">
+    <div class="modal-contenido" (click)="$event.stopPropagation()">
+        <div class="modal-header">
+            <h3>Generar Reporte</h3>
+            <button class="btn-cerrar" (click)="cerrarModal()">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+
+        <div class="modal-body">
+            <p class="descripcion">Selecciona el tipo de reporte que deseas generar:</p>
+
+            <div class="opciones-lista">
+                <button class="opcion-btn" *ngFor="let opcion of opciones" (click)="generarReporte(opcion.value)"
+                    [disabled]="generando">
+                    <i class="fas fa-file-alt"></i>
+                    <span>{{ opcion.label }}</span>
+                </button>
+            </div>
+
+            <div class="loading" *ngIf="generando">
+                <i class="fas fa-spinner fa-spin"></i>
+                <p>Generando reporte...</p>
+            </div>
+        </div>
+    </div>
+</div>

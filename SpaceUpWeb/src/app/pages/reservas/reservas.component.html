@@ -1,0 +1,83 @@
+<div class="reservas-container" *ngIf="!cargando; else loadingTpl">
+  <div class="header-reservas">
+    <h2>Gestión de Reservas</h2>
+    <p class="descripcion">Administra reservas, horarios y seguimiento de ocupación</p>
+  </div>
+
+  <div class="cards-resumen">
+    <div class="card-item purple">
+      <i class="fas fa-file-alt"></i>
+      <p>Total Reservas</p>
+      <h3>{{ totalReservas }}</h3>
+    </div>
+    <div class="card-item green">
+      <i class="fas fa-calendar-check"></i>
+      <p>Activas</p>
+      <h3>{{ activas }}</h3>
+    </div>
+    <div class="card-item blue">
+      <i class="fas fa-check-circle"></i>
+      <p>Completadas</p>
+      <h3>{{ completadas }}</h3>
+    </div>
+    <div class="card-item orange">
+      <i class="fas fa-wallet"></i>
+      <p>Ingresos Hoy</p>
+      <h3>S/{{ ingresosHoy | number: '1.2-2' }}</h3>
+    </div>
+  </div>
+
+  <div class="tabla-reservas" *ngIf="reservasPaginadas.length > 0">
+    <table>
+      <thead>
+        <tr>
+          <th>Código</th>
+          <th>Conductor</th>
+          <th>Estacionamiento</th>
+          <th>Fecha</th>
+          <th>Horario</th>
+          <th>Monto</th>
+          <th>Estado</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let r of reservasPaginadas">
+          <td class="codigo">{{ r.codigoReserva }}</td>
+          <td>{{ r.nombreCliente || '—' }}</td>
+          <td>{{ r.nombreEstacionamiento || '—' }}</td>
+          <td>{{ r.fechaInicio | date: 'yyyy-MM-dd' }}</td>
+          <td>{{ r.fechaInicio | date: 'HH:mm' }} - {{ r.fechaFin | date: 'HH:mm' }}</td>
+          <td class="monto">S/{{ r.total | number:'1.2-2' }}</td>
+          <td>
+            <span class="estado" [ngClass]="{
+              activa: r.estado?.toUpperCase() === 'CONSUMO',
+              completada: r.estado?.toUpperCase() === 'FINALIZADO',
+              pendiente: r.estado?.toUpperCase() === 'PENDIENTE',
+              cancelada: r.estado?.toUpperCase() === 'CANCELADO'
+              }">{{ r.estado }}</span>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+
+    <div class="paginacion">
+      <button (click)="paginaAnterior()" [disabled]="paginaActual === 1">
+        <i class="fas fa-chevron-left"></i>
+      </button>
+      <div class="page-info">
+        Página {{ paginaActual }}
+      </div>
+      <button (click)="paginaSiguiente()" [disabled]="paginaActual >= totalPaginas">
+        <i class="fas fa-chevron-right"></i>
+      </button>
+    </div>
+  </div>
+
+  <p *ngIf="reservasPaginadas.length === 0" class="no-datos">No hay reservas registradas</p>
+</div>
+
+<app-boton-reporte [vista]="'reservas'"></app-boton-reporte>
+
+<ng-template #loadingTpl>
+  <div class="no-datos">Cargando reservas...</div>
+</ng-template>

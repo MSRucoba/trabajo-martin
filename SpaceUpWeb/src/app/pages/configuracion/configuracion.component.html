@@ -1,0 +1,165 @@
+<div class="configuracion-container">
+  <h2>Configuración</h2>
+  <p class="sub">Administra la información de tu perfil de administrador</p>
+
+  <div class="perfil-card">
+    <div class="perfil-header">
+      <h3><i class="fas fa-user-cog"></i> Perfil de Administrador</h3>
+      <button class="btn-editar" *ngIf="!editando" (click)="habilitarEdicion()">
+        <i class="fas fa-edit"></i> Editar perfil
+      </button>
+    </div>
+
+    <div class="perfil-contenido">
+      <div class="foto-perfil">
+        <div class="avatar-container">
+          <img *ngIf="usuario.imagenPerfil" [src]="usuario.imagenPerfil" class="avatar-imagen" alt="Foto de perfil">
+          <div *ngIf="!usuario.imagenPerfil" class="avatar-placeholder">
+            <span>{{ usuario.nombre?.charAt(0) }}{{ usuario.apellido?.charAt(0) }}</span>
+          </div>
+          <button type="button" class="btn-cambiar-foto" (click)="onClickCambiarFoto()" title="Cambiar foto">
+            <i class="fas fa-camera"></i>
+          </button>
+        </div>
+        <input type="file" #fileInput style="display: none;" accept="image/*" (change)="cambiarFoto($event)">
+        <span class="foto-hint">Click en el icono para cambiar</span>
+      </div>
+
+      <div class="datos-perfil">
+        <div class="campo">
+          <label><i class="fas fa-user"></i> Nombre</label>
+          <input type="text" [value]="usuario.nombre" disabled class="campo-bloqueado">
+        </div>
+
+        <div class="campo">
+          <label><i class="fas fa-user-tag"></i> Apellido</label>
+          <input type="text" [value]="usuario.apellido" disabled class="campo-bloqueado">
+        </div>
+
+        <div class="campo">
+          <label><i class="fas fa-envelope"></i> Correo Electrónico</label>
+          <input type="email" [(ngModel)]="usuario.email" [disabled]="!editando">
+        </div>
+
+        <div class="campo">
+          <label><i class="fas fa-phone"></i> Número de Teléfono</label>
+          <input type="text" [(ngModel)]="usuario.phone" [disabled]="!editando">
+        </div>
+
+        <div class="campo">
+          <label><i class="fas fa-lock"></i> Contraseña</label>
+          <div class="campo-password">
+            <input type="password" value="••••••••" disabled>
+            <button class="btn-cambiar-password" (click)="abrirModalPassword()">
+              <i class="fas fa-key"></i> Cambiar
+            </button>
+          </div>
+        </div>
+
+        <div class="botones" *ngIf="editando">
+          <button class="btn-guardar" (click)="guardarCambios()">
+            <i class="fas fa-save"></i> Guardar
+          </button>
+          <button class="btn-cancelar" (click)="cancelarEdicion()">
+            <i class="fas fa-times"></i> Cancelar
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal-overlay" *ngIf="mostrarModalPassword" (click)="cerrarModalPassword()">
+    <div class="modal-password" (click)="$event.stopPropagation()">
+      <div class="modal-header">
+        <h3><i class="fas fa-lock"></i> Cambiar Contraseña</h3>
+        <button class="btn-cerrar" (click)="cerrarModalPassword()">
+          <i class="fas fa-times"></i>
+        </button>
+      </div>
+      <div class="modal-body">
+        <div class="campo-modal">
+          <label>Contraseña Actual</label>
+          <div class="input-password">
+            <input [type]="mostrarPasswordActual ? 'text' : 'password'" [(ngModel)]="passwordData.currentPassword"
+              placeholder="Ingresa tu contraseña actual">
+            <button type="button" (click)="mostrarPasswordActual = !mostrarPasswordActual">
+              <i [class]="mostrarPasswordActual ? 'fas fa-eye-slash' : 'fas fa-eye'"></i>
+            </button>
+          </div>
+        </div>
+        <div class="campo-modal">
+          <label>Nueva Contraseña</label>
+          <div class="input-password">
+            <input [type]="mostrarPasswordNueva ? 'text' : 'password'" [(ngModel)]="passwordData.newPassword"
+              placeholder="Ingresa la nueva contraseña">
+            <button type="button" (click)="mostrarPasswordNueva = !mostrarPasswordNueva">
+              <i [class]="mostrarPasswordNueva ? 'fas fa-eye-slash' : 'fas fa-eye'"></i>
+            </button>
+          </div>
+        </div>
+        <div class="campo-modal">
+          <label>Confirmar Nueva Contraseña</label>
+          <div class="input-password">
+            <input [type]="mostrarPasswordConfirmar ? 'text' : 'password'" [(ngModel)]="passwordData.confirmPassword"
+              placeholder="Confirma la nueva contraseña">
+            <button type="button" (click)="mostrarPasswordConfirmar = !mostrarPasswordConfirmar">
+              <i [class]="mostrarPasswordConfirmar ? 'fas fa-eye-slash' : 'fas fa-eye'"></i>
+            </button>
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn-cancelar" (click)="cerrarModalPassword()">Cancelar</button>
+        <button class="btn-guardar" (click)="cambiarPassword()" [disabled]="guardandoPassword">
+          <i class="fas fa-save" *ngIf="!guardandoPassword"></i>
+          <i class="fas fa-spinner fa-spin" *ngIf="guardandoPassword"></i>
+          {{ guardandoPassword ? 'Guardando...' : 'Guardar' }}
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <div class="terminal-card">
+    <div class="terminal-header">
+      <div class="terminal-title">
+        <i class="fas fa-terminal"></i>
+        <span>Logs del Sistema</span>
+      </div>
+      <div class="terminal-controles">
+        <div class="search-box">
+          <input type="text" placeholder="Buscar en logs..." [(ngModel)]="busqueda" (keyup.enter)="buscarLogs()">
+          <button (click)="buscarLogs()">
+            <i class="fas fa-search"></i>
+          </button>
+        </div>
+        <button class="btn-refresh" (click)="cargarLogs()" [disabled]="autoRefresh">
+          <i class="fas fa-sync-alt" [class.spinning]="cargando"></i>
+        </button>
+        <button class="btn-auto-refresh" (click)="toggleAutoRefresh()" [class.active]="autoRefresh">
+          <i class="fas fa-clock"></i> Auto (5s)
+        </button>
+        <button class="btn-clear" (click)="limpiarLogs()">
+          <i class="fas fa-broom"></i> Limpiar
+        </button>
+      </div>
+    </div>
+
+    <div class="terminal-body" #terminalBody>
+      <div class="terminal-line" *ngFor="let log of logs; let i = index" [class.highlight]="log.includes('ERROR')">
+        <span class="line-number">{{ i + 1 }}</span>
+        <span class="line-content" [innerHTML]="formatearLog(log)"></span>
+      </div>
+      <div class="terminal-line" *ngIf="logs.length === 0">
+        <span class="line-content empty">No hay logs disponibles</span>
+      </div>
+    </div>
+
+    <div class="terminal-footer">
+      <span>Total: {{ totalLogs }} líneas</span>
+      <span *ngIf="autoRefresh" class="auto-refresh-indicator">
+        <i class="fas fa-circle"></i> Auto-refresh activo
+      </span>
+      <span>Últimas {{ lineasMostradas }} líneas</span>
+    </div>
+  </div>
+</div>

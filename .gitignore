@@ -1,0 +1,30 @@
+# ============================================
+# SpaceUp Monorepo - Git Ignore
+# ============================================
+
+# OS
+.DS_Store
+Thumbs.db
+
+# IDE
+.idea/
+.vscode/
+*.sublime-workspace
+
+# Logs
+*.log
+logs/
+
+# Backup de repositorios antiguos (por si acaso)
+.git-backend/
+.git-web/
+
+# Docker
+mysql-data/
+/data
+
+# Secrets
+secrets/
+.credentials/
+*.env
+!.env.example

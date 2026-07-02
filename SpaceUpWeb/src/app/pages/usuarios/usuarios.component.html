@@ -1,0 +1,107 @@
+<div class="usuarios" *ngIf="!loading; else loadingTpl">
+  <h2>Gestión de Usuarios</h2>
+  <p class="sub">
+    Administra conductores, encargados, anfitriones y administradores del sistema
+  </p>
+
+  <div class="cards">
+    <div class="card purple">
+      <i class="fas fa-user"></i>
+      <div>
+        <h3>{{ totalConductores }}</h3>
+        <p>Conductores</p>
+      </div>
+    </div>
+
+    <div class="card violet">
+      <i class="fas fa-user-tie"></i>
+      <div>
+        <h3>{{ totalEncargados }}</h3>
+        <p>Encargados</p>
+      </div>
+    </div>
+
+    <div class="card orange">
+      <i class="fas fa-building"></i>
+      <div>
+        <h3>{{ totalAnfitriones }}</h3>
+        <p>Anfitriones</p>
+      </div>
+    </div>
+
+    <div class="card green">
+      <i class="fas fa-user-shield"></i>
+      <div>
+        <h3>{{ totalAdmins }}</h3>
+        <p>Administradores</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="buscador-contenedor">
+    <h3>Usuarios Registrados</h3>
+    <div class="search-box">
+      <input type="text" placeholder="Buscar usuario..." [(ngModel)]="filtro" (input)="buscarUsuario()" />
+      <button class="search-btn"><i class="fas fa-search"></i></button>
+    </div>
+  </div>
+
+  <div class="card-table">
+    <div class="tabla">
+      <table>
+        <thead>
+          <tr>
+            <th>Usuario</th>
+            <th>Email</th>
+            <th>Rol</th>
+            <th>Empresa</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let u of usuariosPaginados">
+            <td class="usuario">
+              <div class="avatar">
+                <span *ngIf="u.imagenPerfil; else iniciales">
+                  <img [src]="u.imagenPerfil" alt="perfil" />
+                </span>
+                <ng-template #iniciales>
+                  <span class="iniciales">
+                    {{ (u.nombre?.[0] || u.email?.[0] || '?') | uppercase }}
+                  </span>
+                </ng-template>
+              </div>
+              <div class="datos">
+                <strong>{{ u.nombre || '—' }} {{ u.apellido || '' }}</strong>
+              </div>
+            </td>
+            <td>{{ u.email }}</td>
+            <td>
+              <span class="badge" [style.background]="colorRol(u.rol)">
+                {{ u.rol }}
+              </span>
+            </td>
+            <td>{{ u.nombreEmpresa || '—' }}</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="paginacion">
+      <button (click)="anteriorPagina()" [disabled]="paginaActual === 1">
+        <i class="fas fa-chevron-left"></i>
+      </button>
+      <div class="page-info">
+        Página {{ paginaActual }}
+      </div>
+      <button (click)="siguientePagina()" [disabled]="paginaActual >= totalPaginas">
+        <i class="fas fa-chevron-right"></i>
+      </button>
+    </div>
+  </div>
+</div>
+
+<app-boton-reporte [vista]="'usuarios'"></app-boton-reporte>
+
+<ng-template #loadingTpl>
+  <div class="loading">Cargando usuarios...</div>
+</ng-template>

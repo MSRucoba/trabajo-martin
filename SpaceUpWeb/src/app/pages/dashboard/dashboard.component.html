@@ -1,0 +1,121 @@
+<div class="dashboard" *ngIf="!loading; else loadingTpl">
+  <div class="dashboard-header">
+    <h2>Visión General de Gestión</h2>
+    <p class="sub">Panel principal con métricas clave del sistema</p>
+  </div>
+
+  <div class="cards">
+    <div class="card purple">
+      <div class="card-content">
+        <div>
+          <h3>{{ totalEmpresas }}</h3>
+          <p>Total Empresas</p>
+        </div>
+        <i class="fas fa-building icon"></i>
+      </div>
+    </div>
+
+    <div class="card orange">
+      <div class="card-content">
+        <div>
+          <h3>{{ totalEstacionamientos }}</h3>
+          <p>Estacionamientos</p>
+        </div>
+        <i class="fas fa-parking icon"></i>
+      </div>
+    </div>
+
+    <div class="card green">
+      <div class="card-content">
+        <div>
+          <h3>{{ usuariosActivos }}</h3>
+          <p>Usuarios Registrados</p>
+        </div>
+        <i class="fas fa-user-friends icon"></i>
+      </div>
+    </div>
+
+    <div class="card blue">
+      <div class="card-content">
+        <div>
+          <h3>{{ vehiculosTotales }}</h3>
+          <p>Vehículos Registrados ({{ tiposVehiculo }} {{ tiposVehiculo === 1 ? 'tipo' : 'tipos' }})</p>
+        </div>
+        <i class="fas fa-car icon"></i>
+      </div>
+    </div>
+
+    <div class="card yellow">
+      <div class="card-content">
+        <div>
+          <h3>{{ reservasHoy }}</h3>
+          <p>Reservas Historial</p>
+        </div>
+        <i class="fas fa-calendar-check icon"></i>
+      </div>
+    </div>
+
+    <div class="card teal">
+      <div class="card-content">
+        <div>
+          <h3>
+            {{ ingresosMes ? ('S/' + (ingresosMes | number:'1.2-2')) : 'S/0.00' }}
+          </h3>
+          <p>Ingresos del Mes</p>
+        </div>
+        <i class="fas fa-dollar-sign icon"></i>
+      </div>
+    </div>
+  </div>
+
+  <div class="bottom">
+    <div class="alertas">
+      <div class="header">
+        <i class="fas fa-bell icon-header"></i>
+        <h4>Alertas Recientes</h4>
+      </div>
+      <div class="lista-alertas">
+        <div *ngFor="let a of alertas" class="alerta-item" [class]="a.tipo">
+          <div class="alerta-icon">
+            <i class="fas" [ngClass]="{
+                'fa-building': a.tipo === 'info',
+                'fa-exclamation-circle': a.tipo === 'danger'
+              }"></i>
+          </div>
+          <div class="alerta-texto">
+            <strong>{{ a.titulo }}</strong>
+            <p>{{ a.detalle }}</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="actividad">
+      <div class="header">
+        <i class="fas fa-history icon-header"></i>
+        <h4>Actividad Reciente</h4>
+      </div>
+      <div class="lista-actividad">
+        <div *ngFor="let act of actividades" class="actividad-item">
+          <div class="actividad-icon" [ngClass]="{
+              user: act.tipo === 'user',
+              pago: act.tipo === 'pago'
+            }">
+            <i class="fas" [ngClass]="{
+                'fa-user-plus': act.tipo === 'user',
+                'fa-credit-card': act.tipo === 'pago'
+              }"></i>
+          </div>
+          <div class="actividad-texto">
+            <strong>{{ act.titulo }}</strong>
+            <p>{{ act.detalle }} — <span>{{ act.tiempo }}</span></p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<ng-template #loadingTpl>
+  <div class="loading">Cargando datos...</div>
+</ng-template>

@@ -1,0 +1,48 @@
+@import url('https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700&display=swap');
+
+/* RESET GENERAL */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+  font-family: 'Nunito', sans-serif;
+}
+
+/* PALETA INSTITUCIONAL */
+:root {
+  --color-primary: #5955B3;      /* principal fuerte */
+  --color-secondary: #9385FE;    /* hover/subyacente */
+  --color-accent: #F5B23D;       /* botones y acento */
+  --color-bg: #f8f2fe;           /* fondos de secciones y cards */
+  --color-light: #FFF6E9;
+  --color-muted: #A2A2A2;
+  --text-primary: #282C76;
+  --text-secondary: #A2A2A2;
+}
+
+/* ESTRUCTURA BASE */
+html, body {
+  height: 100%;
+  width: 100%;
+  background-color: var(--color-bg);
+  color: var(--text-primary);
+}
+
+/* SCROLL PERSONALIZADO */
+::-webkit-scrollbar {
+  width: 8px;
+}
+::-webkit-scrollbar-thumb {
+  background-color: var(--color-primary);
+  border-radius: 4px;
+}
+
+a {
+  text-decoration: none;
+  color: inherit;
+}
+
+button {
+  font-family: inherit;
+  cursor: pointer;
+}

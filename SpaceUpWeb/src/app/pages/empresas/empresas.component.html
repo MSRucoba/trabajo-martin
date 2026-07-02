@@ -1,0 +1,94 @@
+<div class="empresas-container">
+  <div class="header-empresas">
+    <h2>Lista de Empresas</h2>
+    <div class="search-box">
+      <input type="text" placeholder="Buscar empresa..." [(ngModel)]="filtro" (input)="buscarEmpresa()" />
+      <button class="search-btn"><i class="fas fa-search"></i></button>
+    </div>
+  </div>
+
+  <div class="tabla-empresas" *ngIf="!cargando && empresas.length > 0">
+    <table>
+      <thead>
+        <tr>
+          <th></th>
+          <th>Nombre</th>
+          <th>RUC</th>
+          <th>Contacto</th>
+        </tr>
+      </thead>
+      <tbody>
+        <ng-container *ngFor="let empresa of empresas">
+          <tr (click)="toggleEstacionamientos(empresa.id)" class="fila-empresa">
+            <td class="icono-flecha">
+              <i class="fas" [ngClass]="{
+                  'fa-chevron-down': empresaSeleccionada === empresa.id,
+                  'fa-chevron-right': empresaSeleccionada !== empresa.id
+                }"></i>
+            </td>
+            <td>{{ empresa.nombreEmpresa }}</td>
+            <td>{{ empresa.ruc }}</td>
+            <td>{{ empresa.numeroContacto }}</td>
+          </tr>
+
+          <tr *ngIf="empresaSeleccionada === empresa.id">
+            <td colspan="4" class="celda-subtabla">
+              <div class="subtabla-wrapper">
+                <div class="subtabla-estacionamientos" *ngIf="estacionamientos[empresa.id]">
+                  <table *ngIf="estacionamientos[empresa.id].length > 0; else sinEstacionamientos">
+                    <thead>
+                      <tr>
+                        <th>Nombre</th>
+                        <th>Dirección</th>
+                        <th>Cupos Totales</th>
+                        <th>Cupos Disponibles</th>
+                        <th>Hora de Apertura</th>
+                        <th>Hora de Cierre</th>
+                        <th>Encargado</th>
+                        <th>Estado</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      <tr *ngFor="let e of estacionamientos[empresa.id]">
+                        <td>{{ e.nombre }}</td>
+                        <td>{{ e.direccion }}</td>
+                        <td>{{ e.cupos_totales }}</td>
+                        <td><span class="cupos">{{ e.cupos_disponibles }}</span></td>
+                        <td>{{ e.hora_apertura || '—' }}</td>
+                        <td>{{ e.hora_cierre || '—' }}</td>
+                        <td>{{ getEncargadoNombre(e) }}</td>
+                        <td>
+                          <span class="estado" [ngClass]="{ activo: e.estado, inactivo: !e.estado }">
+                            {{ e.estado ? 'Activo' : 'Inactivo' }}
+                          </span>
+                        </td>
+                      </tr>
+                    </tbody>
+                  </table>
+
+                  <ng-template #sinEstacionamientos>
+                    <p class="no-estacionamientos">No hay estacionamientos en esta empresa</p>
+                  </ng-template>
+                </div>
+              </div>
+            </td>
+          </tr>
+        </ng-container>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="paginacion" *ngIf="!cargando && empresas.length > 0">
+    <button [disabled]="paginaActual === 1" (click)="cambiarPagina(-1)">
+      <i class="fas fa-chevron-left"></i>
+    </button>
+    <div class="page-info">
+      Página {{ paginaActual }}
+    </div>
+    <button [disabled]="paginaActual >= totalPaginas" (click)="cambiarPagina(1)">
+      <i class="fas fa-chevron-right"></i>
+    </button>
+  </div>
+</div>
+
+<app-boton-reporte [vista]="'empresas'"></app-boton-reporte>

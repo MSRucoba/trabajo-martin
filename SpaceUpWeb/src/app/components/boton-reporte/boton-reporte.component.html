@@ -1,0 +1,5 @@
+<div class="boton-flotante" (click)="abrirModal()" title="Generar Reporte">
+    <i class="fas fa-file-pdf"></i>
+</div>
+
+<app-modal-reportes *ngIf="mostrarModal" [vista]="vista" (cerrar)="cerrarModal()"></app-modal-reportes>

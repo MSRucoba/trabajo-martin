@@ -1,0 +1,26 @@
+.boton-flotante {
+    position: fixed;
+    bottom: 30px;
+    right: 30px;
+    width: 60px;
+    height: 60px;
+    background: linear-gradient(135deg, #5b56d6, #7b75f4);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 4px 15px rgba(91, 86, 214, 0.4);
+    cursor: pointer;
+    z-index: 9999;
+    transition: all 0.3s ease;
+}
+
+.boton-flotante:hover {
+    transform: scale(1.1);
+    box-shadow: 0 6px 20px rgba(91, 86, 214, 0.6);
+}
+
+.boton-flotante i {
+    color: white;
+    font-size: 24px;
+}

@@ -1,0 +1,56 @@
+<div class="login-container">
+  <canvas id="bgCanvas"></canvas>
+
+  <div class="left-side">
+    <div class="logo-big">
+      <img src="assets/img/LOGO_B.png" alt="SpaceUp Logo Grande">
+    </div>
+    <img src="assets/img/LOGO_B.png" alt="SpaceUp" class="logo-mini">
+    <h1 class="title">Bienvenido a SpaceUp Web</h1>
+    <p class="subtitle">Ingreso autorizado solo a administradores de la app móvil SpaceUp.</p>
+    <div class="decor-line"></div>
+  </div>
+
+  <div class="right-side">
+    <div class="login-card">
+      <h2 class="card-title">Iniciar Sesión</h2>
+      <p class="card-sub">Panel de administración</p>
+
+      <div class="input-group">
+        <label for="email">Correo electrónico</label>
+        <input 
+          type="email" 
+          id="email" 
+          [(ngModel)]="user.email" 
+          placeholder="Ingresa tu correo institucional"
+        >
+      </div>
+
+      <div class="input-group">
+        <label for="password">Contraseña</label>
+        <div class="password-container">
+          <input 
+            [type]="hidePassword ? 'password' : 'text'" 
+            id="password"
+            [(ngModel)]="user.password" 
+            placeholder="Ingresa tu contraseña"
+          >
+          <i 
+            class="toggle-password fa" 
+            [ngClass]="hidePassword ? 'fa-eye-slash' : 'fa-eye'"
+            (click)="hidePassword = !hidePassword"
+          ></i>
+        </div>
+      </div>
+
+      <div class="error-box" *ngIf="error">
+        <i class="fa fa-exclamation-circle"></i>
+        {{ error }}
+      </div>
+
+      <button (click)="onLogin()" [disabled]="!user.email || !user.password">
+        Ingresar
+      </button>
+    </div>
+  </div>
+</div>

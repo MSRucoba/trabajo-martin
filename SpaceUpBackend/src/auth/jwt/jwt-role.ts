@@ -1,0 +1,6 @@
+export enum JwtRole {
+  ADMIN = 'ADMIN',
+  CONDUCTOR = 'CONDUCTOR',
+  ANFITRION = 'ANFITRION',
+  ENCARGADO = 'ENCARGADO',
+}
