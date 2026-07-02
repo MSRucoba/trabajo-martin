@@ -51,9 +51,9 @@ pipeline {
                     echo '🧪 === BACKEND: INSTALANDO DEPENDENCIAS Y EJECUTANDO TESTS ==='
 
                     dir("${BACKEND_DIR}") {
-                        sh 'npm ci'
-                        sh 'npm run test:cov || npm run test -- --coverage'
-                    }
+    sh 'npm install'
+    sh 'npm run test:cov || npm run test -- --coverage'
+}
                 }
             }
         }
