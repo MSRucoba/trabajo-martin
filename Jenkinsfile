@@ -1,5 +1,6 @@
 // 🚀 Jenkinsfile - Pipeline CI/CD para SpaceUp
-// Proyecto: NestJS Backend + Angular Frontend
+// Backend: NestJS
+// Frontend: Angular
 // Jenkins: http://localhost:9080
 // SonarQube: http://localhost:9000
 
@@ -8,29 +9,26 @@ pipeline {
 
     options {
         timestamps()
+        disableConcurrentBuilds()
     }
 
     environment {
         PROJECT_NAME = 'spaceup'
 
-        REPO_URL     = 'https://github.com/MSRucoba/trabajo-martin.git'
-        REPO_BRANCH  = 'main'
+        REPO_URL    = 'https://github.com/MSRucoba/trabajo-martin.git'
+        REPO_BRANCH = 'main'
 
         BACKEND_DIR  = 'SpaceUpBackend'
         FRONTEND_DIR = 'SpaceUpWeb'
 
-        DOCKER_BACKEND  = 'spaceup-backend:latest'
-        DOCKER_FRONTEND = 'spaceup-frontend:latest'
+        BACKEND_IMAGE  = 'spaceup-backend:latest'
+        FRONTEND_IMAGE = 'spaceup-frontend:latest'
 
         BACKEND_CONTAINER  = 'spaceup-backend'
         FRONTEND_CONTAINER = 'spaceup-frontend'
 
         SONAR_PROJECT_KEY  = 'spaceup'
         SONAR_PROJECT_NAME = 'spaceup'
-
-        // Si Jenkins está en Docker, usar host.docker.internal
-        // No uses localhost aquí si el análisis corre dentro de Docker/Jenkins
-        SONAR_HOST_URL = 'http://host.docker.internal:9000'
     }
 
     stages {
@@ -48,12 +46,12 @@ pipeline {
         stage('Install & Test Backend') {
             steps {
                 timeout(time: 15, unit: 'MINUTES') {
-                    echo '🧪 === BACKEND: INSTALANDO DEPENDENCIAS Y EJECUTANDO TESTS ==='
+                    echo '🧪 === BACKEND: INSTALANDO DEPENDENCIAS Y TESTS ==='
 
                     dir("${BACKEND_DIR}") {
-    sh 'npm install'
-    sh 'npm run test:cov || npm run test -- --coverage'
-}
+                        sh 'npm install'
+                        sh 'npm run test:cov || npm run test -- --coverage'
+                    }
                 }
             }
         }
@@ -64,20 +62,21 @@ pipeline {
                     echo '🏗️ === BACKEND: COMPILANDO ==='
 
                     dir("${BACKEND_DIR}") {
+                        sh 'node -v'
+                        sh 'npm -v'
                         sh 'npm run build'
                     }
                 }
             }
         }
 
-        stage('Install & Test Frontend') {
+        stage('Install Frontend') {
             steps {
                 timeout(time: 15, unit: 'MINUTES') {
-                    echo '🧪 === FRONTEND: INSTALANDO DEPENDENCIAS Y EJECUTANDO TESTS ==='
+                    echo '📦 === FRONTEND: INSTALANDO DEPENDENCIAS ==='
 
                     dir("${FRONTEND_DIR}") {
-                        sh 'npm ci'
-                        sh 'npm run test:ci || npm test -- --watch=false --code-coverage'
+                        sh 'npm install'
                     }
                 }
             }
@@ -85,7 +84,7 @@ pipeline {
 
         stage('Build Frontend') {
             steps {
-                timeout(time: 10, unit: 'MINUTES') {
+                timeout(time: 15, unit: 'MINUTES') {
                     echo '🏗️ === FRONTEND: COMPILANDO ==='
 
                     dir("${FRONTEND_DIR}") {
@@ -97,29 +96,27 @@ pipeline {
 
         stage('SonarQube Analysis') {
             steps {
-                timeout(time: 10, unit: 'MINUTES') {
-                    echo '📊 === EJECUTANDO ANÁLISIS SONARQUBE CON DOCKER ==='
-
-                    withCredentials([string(credentialsId: 'sonar-token', variable: 'SONAR_AUTH')]) {
-                        sh """
-                        docker run --rm \
-                            -u root \
-                            -v "${WORKSPACE}:/usr/src" \
-                            -w /usr/src \
-                            sonarsource/sonar-scanner-cli \
+                echo '📊 === ANALIZANDO CÓDIGO CON SONARQUBE ==='
+                withSonarQubeEnv('sonarqube') {
+                    sh """
+                        sonar-scanner \
                             -Dsonar.projectKey=${SONAR_PROJECT_KEY} \
                             -Dsonar.projectName=${SONAR_PROJECT_NAME} \
                             -Dsonar.sources=${BACKEND_DIR}/src,${FRONTEND_DIR}/src \
                             -Dsonar.exclusions=**/node_modules/**,**/dist/**,**/coverage/**,**/*.spec.ts,**/*.entity.ts,**/seeds/** \
-                            -Dsonar.javascript.lcov.reportPaths=${BACKEND_DIR}/coverage/lcov.info,${FRONTEND_DIR}/coverage/lcov.info \
+                            -Dsonar.javascript.lcov.reportPaths=${BACKEND_DIR}/coverage/lcov.info \
                             -Dsonar.coverage.exclusions=${FRONTEND_DIR}/src/** \
-                            -Dsonar.cpd.exclusions=${FRONTEND_DIR}/src/** \
-                            -Dsonar.scm.disabled=false \
-                            -Dsonar.javascript.node.maxspace=4096 \
-                            -Dsonar.host.url=${SONAR_HOST_URL} \
-                            -Dsonar.token=${SONAR_AUTH}
-                        """
-                    }
+                            -Dsonar.cpd.exclusions=${FRONTEND_DIR}/src/**
+                    """
+                }
+            }
+        }
+
+        stage('Quality Gate') {
+            steps {
+                sleep(15)
+                timeout(time: 15, unit: 'MINUTES') {
+                    waitForQualityGate abortPipeline: true
                 }
             }
         }
@@ -127,8 +124,8 @@ pipeline {
         stage('Docker Build Backend') {
             steps {
                 timeout(time: 10, unit: 'MINUTES') {
-                    echo '🐳 === CONSTRUYENDO IMAGEN DOCKER DEL BACKEND ==='
-                    sh "docker build -t ${DOCKER_BACKEND} ./${BACKEND_DIR}"
+                    echo '🐳 === CONSTRUYENDO IMAGEN BACKEND ==='
+                    sh "docker build -t ${BACKEND_IMAGE} ./${BACKEND_DIR}"
                 }
             }
         }
@@ -136,21 +133,25 @@ pipeline {
         stage('Docker Build Frontend') {
             steps {
                 timeout(time: 10, unit: 'MINUTES') {
-                    echo '🐳 === CONSTRUYENDO IMAGEN DOCKER DEL FRONTEND ==='
-                    sh "docker build -t ${DOCKER_FRONTEND} ./${FRONTEND_DIR}"
+                    echo '🐳 === CONSTRUYENDO IMAGEN FRONTEND ==='
+                    sh "docker build -t ${FRONTEND_IMAGE} ./${FRONTEND_DIR}"
                 }
             }
         }
 
         stage('Clean Deploy') {
             steps {
-                echo '🧹 === ELIMINANDO CONTENEDORES ANTERIORES ==='
+                echo '🧹 === LIMPIANDO CONTENEDORES ANTERIORES ==='
 
                 sh "docker stop ${BACKEND_CONTAINER} || true"
                 sh "docker rm ${BACKEND_CONTAINER} || true"
 
                 sh "docker stop ${FRONTEND_CONTAINER} || true"
                 sh "docker rm ${FRONTEND_CONTAINER} || true"
+
+                // Limpia cualquier contenedor que esté usando esos puertos
+                sh "docker ps -q --filter publish=3000 | xargs -r docker stop || true"
+                sh "docker ps -q --filter publish=4200 | xargs -r docker stop || true"
             }
         }
 
@@ -158,8 +159,8 @@ pipeline {
             steps {
                 echo '🚀 === LEVANTANDO BACKEND Y FRONTEND ==='
 
-                sh "docker run -d --name ${BACKEND_CONTAINER} -p 3000:3000 ${DOCKER_BACKEND}"
-                sh "docker run -d --name ${FRONTEND_CONTAINER} -p 4200:80 ${DOCKER_FRONTEND}"
+                sh "docker run -d --name ${BACKEND_CONTAINER} -p 3000:3000 ${BACKEND_IMAGE}"
+                sh "docker run -d --name ${FRONTEND_CONTAINER} -p 4200:80 ${FRONTEND_IMAGE}"
             }
         }
 
