@@ -8,7 +8,7 @@ $dockerArgs = @(
   'run',
   '--rm',
   '-e', "SONAR_TOKEN=$SonarToken",
-  '-v', "$Workspace:/usr/src",
+  '-v', "${Workspace}:/usr/src",
   '-w', '/usr/src',
   'sonarsource/sonar-scanner-cli:latest',
   '-Dsonar.host.url=' + $SonarHostUrl,
