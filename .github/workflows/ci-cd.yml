@@ -46,13 +46,15 @@ jobs:
         run: npm run test:ci
 
       - name: SonarQube Scan
-        uses: SonarSource/sonarqube-scan-action@v4
         env:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
-        with:
-          args: >
-            -Dsonar.host.url=${{ env.SONAR_HOST_URL }}
-            -Dproject.settings=sonar-project.properties
+        run: |
+          docker run --rm `
+            -e SONAR_TOKEN=$env:SONAR_TOKEN `
+            -v "${{ github.workspace }}:/usr/src" `
+            -w /usr/src `
+            sonarsource/sonar-scanner-cli:latest `
+            sonar-scanner -Dsonar.host.url=${{ env.SONAR_HOST_URL }} -Dproject.settings=sonar-project.properties -Dsonar.token=$env:SONAR_TOKEN
 
   build-and-deploy:
     name: Build and Start Containers
