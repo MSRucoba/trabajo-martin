@@ -46,13 +46,10 @@ jobs:
         run: npm run test:ci
 
       - name: SonarQube Scan
+        shell: powershell
         env:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
-        run: |
-          powershell -ExecutionPolicy Bypass -File .github/scripts/run-sonar.ps1 `
-            -SonarHostUrl "${{ env.SONAR_HOST_URL }}" `
-            -SonarToken "$env:SONAR_TOKEN" `
-            -Workspace "${{ github.workspace }}"
+        run: .\.github\scripts\run-sonar.ps1 -SonarHostUrl $env:SONAR_HOST_URL -SonarToken $env:SONAR_TOKEN
 
   build-and-deploy:
     name: Build and Start Containers

@@ -1,20 +1,16 @@
 param(
   [string]$SonarHostUrl,
-  [string]$SonarToken,
-  [string]$Workspace
+  [string]$SonarToken
 )
 
-$dockerArgs = @(
-  'run',
-  '--rm',
-  '-e', "SONAR_TOKEN=$SonarToken",
-  '-v', "${Workspace}:/usr/src",
-  '-w', '/usr/src',
-  'sonarsource/sonar-scanner-cli:latest',
-  '-Dsonar.host.url=' + $SonarHostUrl,
-  '-Dproject.settings=sonar-project.properties',
-  '-Dsonar.token=' + $SonarToken
+
+Write-Host 'Ejecutando análisis SonarQube...'
+
+$scannerArgs = @(
+  "-Dsonar.host.url=$SonarHostUrl",
+  "-Dsonar.token=$SonarToken",
+  '-Dproject.settings=sonar-project.properties'
 )
 
-& docker @dockerArgs
+& sonar-scanner @scannerArgs
 exit $LASTEXITCODE
