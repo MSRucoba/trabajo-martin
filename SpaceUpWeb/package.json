@@ -9,7 +9,7 @@
     "start:dev": "ng serve",
     "watch": "ng build --watch --configuration development",
     "test": "ng test",
-    "test:ci": "ng test --browsers=ChromeHeadless --watch=false",
+    "test:ci": "ng test --browsers=ChromeHeadlessNoSandbox --watch=false",
     "lint": "eslint src --ext .ts",
     "lint:fix": "eslint src --ext .ts --fix"
   },

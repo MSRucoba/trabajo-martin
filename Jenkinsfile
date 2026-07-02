@@ -29,9 +29,7 @@ pipeline {
         stage('Build & Test Frontend') {
             steps {
                 dir('SpaceUpWeb') {
-                    sh 'npm ci'
-                    sh 'npm run test:ci'
-                    sh 'npm run build'
+                    sh 'export CHROME_BIN=$(which chromium) && npm ci && npm run test:ci && npm run build'
                 }
             }
         }
