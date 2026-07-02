@@ -1,90 +1,13 @@
 # ============================================
-# SpaceUp - Entorno de desarrollo con Docker Compose
+# SpaceUp - Frontend con Docker Compose
 # ============================================
 # Uso:
-#   docker compose up -d        # Levantar todo
-#   docker compose up -d mysql  # Solo MySQL
-#   docker compose logs -f backend
-#   docker compose down -v      # Borrar también volúmenes
-#
-# Primer uso:
-#   1. cp SpaceUpBackend/.env.example SpaceUpBackend/.env
-#   2. Rellenar SpaceUpBackend/.env con valores locales (ya están por defecto)
-#   3. docker compose up -d mysql
-#   4. docker compose up -d backend
-#   5. docker compose exec backend npm run seed:admin
-#   6. docker compose up -d frontend
+#   docker compose up -d        # Levantar frontend
+#   docker compose logs -f frontend
+#   docker compose down         # Detener
 # ============================================
 
 services:
-  mysql:
-    image: mysql:8.0
-    container_name: spaceup-mysql
-    restart: unless-stopped
-    environment:
-      MYSQL_ROOT_PASSWORD: root_password
-      MYSQL_DATABASE: spaceup_db
-      MYSQL_USER: spaceup_user
-      MYSQL_PASSWORD: spaceup_password
-    ports:
-      - "3306:3306"
-    volumes:
-      - mysql-data:/var/lib/mysql
-    healthcheck:
-      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-proot_password"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-    networks:
-      - spaceup-network
-
-  phpmyadmin:
-    image: phpmyadmin/phpmyadmin:latest
-    container_name: spaceup-phpmyadmin
-    restart: unless-stopped
-    environment:
-      PMA_HOST: mysql
-      PMA_PORT: 3306
-      MYSQL_ROOT_PASSWORD: root_password
-    ports:
-      - "8080:80"
-    depends_on:
-      mysql:
-        condition: service_healthy
-    networks:
-      - spaceup-network
-
-  backend:
-    build:
-      context: ./SpaceUpBackend
-      dockerfile: Dockerfile
-    container_name: spaceup-backend
-    restart: unless-stopped
-    env_file:
-      - ./SpaceUpBackend/.env
-    environment:
-      NODE_ENV: development
-      DB_HOST: mysql
-      DB_PORT: 3306
-      DB_USER: spaceup_user
-      DB_PASS: spaceup_password
-      DB_NAME: spaceup_db
-      PORT: 3000
-      UPLOAD_DIR: /app/uploads
-      PUBLIC_URL: http://localhost:3000
-      CORS_ORIGINS: http://localhost:4200,http://localhost:4000
-    ports:
-      - "3000:3000"
-    volumes:
-      - ./SpaceUpBackend/logs:/app/logs
-      - ./SpaceUpBackend/uploads:/app/uploads
-    depends_on:
-      mysql:
-        condition: service_healthy
-    networks:
-      - spaceup-network
-    command: ["sh", "-c", "npm run seed:admin && node dist/main"]
-
   frontend:
     build:
       context: ./SpaceUpWeb
@@ -93,13 +16,8 @@ services:
     restart: unless-stopped
     ports:
       - "4200:80"
-    depends_on:
-      - backend
     networks:
       - spaceup-network
-
-volumes:
-  mysql-data:
 
 networks:
   spaceup-network:
