@@ -106,7 +106,7 @@
       "text-summary",
       "clover"
     ],
-    "coverageThresholds": {
+    "coverageThreshold": {
       "global": {
         "statements": 50,
         "branches": 40,
