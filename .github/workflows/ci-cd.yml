@@ -49,7 +49,8 @@ jobs:
         shell: powershell
         env:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
-        run: .\.github\scripts\run-sonar.ps1 -SonarHostUrl $env:SONAR_HOST_URL -SonarToken $env:SONAR_TOKEN
+          SONAR_SCANNER_PATH: ${{ vars.SONAR_SCANNER_PATH }}
+        run: .\.github\scripts\run-sonar.ps1 -SonarHostUrl $env:SONAR_HOST_URL -SonarToken $env:SONAR_TOKEN -SonarScannerPath $env:SONAR_SCANNER_PATH
 
   build-and-deploy:
     name: Build and Start Containers
