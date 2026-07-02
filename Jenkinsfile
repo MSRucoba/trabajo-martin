@@ -3,22 +3,34 @@ pipeline {
     agent any
 
     environment {
-        REPO_URL          = 'https://github.com/MSRucoba/trabajo-martin.git'
-        APP_NAME          = 'spaceup'
-        DOCKER_BACKEND    = 'spaceup-backend:latest'
-        DOCKER_FRONTEND   = 'spaceup-frontend:latest'
+        APP_NAME        = 'spaceup'
+        DOCKER_BACKEND  = 'spaceup-backend:latest'
+        DOCKER_FRONTEND = 'spaceup-frontend:latest'
     }
 
     stages {
 
-        stage('📥 Checkout') {
+        stage('Checkout') {
             steps {
-                cleanWs()
-                git branch: 'main', url: "${REPO_URL}"
+                checkout scm
             }
         }
 
-        stage('🏗️ Build & Test Backend') {
+        stage('Setup Node.js') {
+            steps {
+                sh '''
+                    # Instalar Node.js 20 si no existe
+                    if ! command -v node &> /dev/null; then
+                        curl -fsSL https://deb.nodesource.com/setup_20.x | bash -
+                        apt-get install -y nodejs
+                    fi
+                    node --version
+                    npm --version
+                '''
+            }
+        }
+
+        stage('Build & Test Backend') {
             steps {
                 dir('SpaceUpBackend') {
                     sh 'npm ci'
@@ -28,7 +40,7 @@ pipeline {
             }
         }
 
-        stage('🏗️ Build & Test Frontend') {
+        stage('Build & Test Frontend') {
             steps {
                 dir('SpaceUpWeb') {
                     sh 'npm ci'
@@ -38,25 +50,29 @@ pipeline {
             }
         }
 
-        stage('📊 Sonar Analysis') {
+        stage('Sonar Analysis') {
             steps {
                 timeout(time: 10, unit: 'MINUTES') {
                     withSonarQubeEnv('sonarqube') {
-                        sh """
+                        sh '''
+                            # Instalar sonar-scanner si no existe
+                            if ! command -v sonar-scanner &> /dev/null; then
+                                npm install -g sonarqube-scanner
+                            fi
                             sonar-scanner \
-                                -Dsonar.projectKey=${APP_NAME} \
-                                -Dsonar.projectName=${APP_NAME} \
+                                -Dsonar.projectKey=spaceup \
+                                -Dsonar.projectName=spaceup \
                                 -Dsonar.sources=SpaceUpBackend/src,SpaceUpWeb/src \
                                 -Dsonar.exclusions=**/node_modules/**,**/dist/**,**/coverage/**,**/*.spec.ts,**/*.entity.ts,**/seeds/** \
                                 -Dsonar.javascript.lcov.reportPaths=SpaceUpBackend/coverage/lcov.info \
                                 -Dsonar.typescript.lcov.reportPaths=SpaceUpWeb/coverage/lcov.info
-                        """
+                        '''
                     }
                 }
             }
         }
 
-        stage('🎯 Quality Gate') {
+        stage('Quality Gate') {
             steps {
                 sleep(10)
                 timeout(time: 5, unit: 'MINUTES') {
@@ -65,10 +81,10 @@ pipeline {
             }
         }
 
-        stage('🐳 Docker Build & Deploy') {
+        stage('Docker Build & Deploy') {
             steps {
                 script {
-                    sh "docker build -t ${DOCKER_BACKEND} ./SpaceUpBackend"
+                    sh "docker build -t ${DOCKER_BACKEND}  ./SpaceUpBackend"
                     sh "docker build -t ${DOCKER_FRONTEND} ./SpaceUpWeb"
 
                     sh "docker stop spaceup-backend  || true"
@@ -85,10 +101,10 @@ pipeline {
 
     post {
         success {
-            echo '✅ ¡Pipeline finalizado con éxito!'
+            echo '✅ Pipeline finalizado con exito!'
         }
         failure {
-            echo '❌ El pipeline falló.'
+            echo '❌ El pipeline fallo.'
         }
     }
 }
