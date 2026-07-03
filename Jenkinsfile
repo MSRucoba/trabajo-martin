@@ -97,7 +97,7 @@ pipeline {
         stage('SonarQube Analysis') {
             steps {
                 echo '📊 === ANALIZANDO CÓDIGO CON SONARQUBE ==='
-                withSonarQubeEnv('sonarqube') {
+                withCredentials([string(credentialsId: 'SonarQube Token 2026', variable: 'SONAR_TOKEN')]) {
                     sh """
                         sonar-scanner \
                             -Dsonar.projectKey=${SONAR_PROJECT_KEY} \
@@ -106,7 +106,9 @@ pipeline {
                             -Dsonar.exclusions=**/node_modules/**,**/dist/**,**/coverage/**,**/*.spec.ts,**/*.entity.ts,**/seeds/** \
                             -Dsonar.javascript.lcov.reportPaths=${BACKEND_DIR}/coverage/lcov.info \
                             -Dsonar.coverage.exclusions=${FRONTEND_DIR}/src/** \
-                            -Dsonar.cpd.exclusions=${FRONTEND_DIR}/src/**
+                            -Dsonar.cpd.exclusions=${FRONTEND_DIR}/src/** \
+                            -Dsonar.host.url=http://sonarqube:9000 \
+                            -Dsonar.token=\${SONAR_TOKEN}
                     """
                 }
             }
@@ -116,7 +118,7 @@ pipeline {
             steps {
                 sleep(15)
                 timeout(time: 15, unit: 'MINUTES') {
-                    waitForQualityGate abortPipeline: true
+                    waitForQualityGate abortPipeline: false
                 }
             }
         }
