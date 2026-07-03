@@ -104,17 +104,28 @@ pipeline {
                 withSonarQubeEnv('sonarqube') {
                     // Usar la credencial configurada en Jenkins (tipo Secret Text)
                     withCredentials([string(credentialsId: "${SONAR_CREDENTIALS_ID}", variable: 'SONAR_TOKEN')]) {
-                        sh """
-                            sonar-scanner \
-                                -Dsonar.projectKey=${SONAR_PROJECT_KEY} \
-                                -Dsonar.projectName=${SONAR_PROJECT_NAME} \
-                                -Dsonar.sources=${BACKEND_DIR}/src,${FRONTEND_DIR}/src \
-                                -Dsonar.exclusions=**/node_modules/**,**/dist/**,**/coverage/**,**/*.spec.ts,**/*.entity.ts,**/seeds/** \
-                                -Dsonar.javascript.lcov.reportPaths=${BACKEND_DIR}/coverage/lcov.info \
-                                -Dsonar.coverage.exclusions=${FRONTEND_DIR}/src/** \
-                                -Dsonar.cpd.exclusions=${FRONTEND_DIR}/src/** \
-                                -Dsonar.token=\${SONAR_TOKEN}
-                        """
+                        script {
+                            def scannerCmd = """
+sonar-scanner \
+  -Dsonar.projectKey=${SONAR_PROJECT_KEY} \
+  -Dsonar.projectName=${SONAR_PROJECT_NAME} \
+  -Dsonar.sources=${BACKEND_DIR}/src,${FRONTEND_DIR}/src \
+  -Dsonar.exclusions=**/node_modules/**,**/dist/**,**/coverage/**,**/*.spec.ts,**/*.entity.ts,**/seeds/** \
+  -Dsonar.javascript.lcov.reportPaths=${BACKEND_DIR}/coverage/lcov.info \
+  -Dsonar.coverage.exclusions=${FRONTEND_DIR}/src/** \
+  -Dsonar.cpd.exclusions=${FRONTEND_DIR}/src/** \
+  -Dsonar.token=${SONAR_TOKEN}
+"""
+                            def out = sh(script: scannerCmd, returnStdout: true).trim()
+                            echo out
+                            def m = out =~ /api\\/ce\\/task\\?id=([0-9a-f\\-]+)/
+                            if (m) {
+                                env.SONAR_CE_TASK_ID = m[0][1]
+                                echo "SONAR_CE_TASK_ID=${env.SONAR_CE_TASK_ID}"
+                            } else {
+                                echo "No CE task id found in scanner output."
+                            }
+                        }
                     }
                 }
             }
@@ -122,13 +133,59 @@ pipeline {
 
         stage('Quality Gate') {
             steps {
-                // `waitForQualityGate` necesita que SonarQube llame al webhook de Jenkins.
-                // Ajustamos timeout y abortamos el pipeline si el gate falla.
-                timeout(time: 10, unit: 'MINUTES') {
+                // Intentamos waitForQualityGate() primero; si falla, hacemos polling por la API de SonarQube.
+                timeout(time: 15, unit: 'MINUTES') {
                     script {
-                        def qg = waitForQualityGate()
-                        if (qg.status != 'OK') {
-                            error "Quality Gate failed: ${qg.status}"
+                        try {
+                            def qg = waitForQualityGate()
+                            if (qg.status != 'OK') {
+                                error "Quality Gate failed: ${qg.status}"
+                            }
+                        } catch (err) {
+                            echo "waitForQualityGate failed or timed out: ${err}. Usando fallback por API."
+
+                            if (!env.SONAR_CE_TASK_ID) {
+                                error 'No SONAR_CE_TASK_ID available to poll. Ensure sonar-scanner output is captured.'
+                            }
+
+                            def sonarHost = env.SONAR_HOST_URL ?: 'http://host.docker.internal:9000'
+                            // Poll CE task until it reaches a terminal status
+                            def maxAttempts = 60
+                            def attempt = 0
+                            def taskStatus = ''
+                            while (attempt < maxAttempts) {
+                                attempt++
+                                def res = sh(script: "curl -s -u ${SONAR_TOKEN}: \"${sonarHost}/api/ce/task?id=${env.SONAR_CE_TASK_ID}\"", returnStdout: true).trim()
+                                def mm = res =~ /\"status\"\s*:\s*\"([^\"]+)\"/
+                                if (mm) {
+                                    taskStatus = mm[0][1]
+                                    echo "CE task status: ${taskStatus}"
+                                    if (taskStatus == 'SUCCESS' || taskStatus == 'FAILED' || taskStatus == 'CANCELED') {
+                                        break
+                                    }
+                                }
+                                sleep 10
+                            }
+
+                            if (taskStatus != 'SUCCESS') {
+                                error "SonarQube CE task did not finish successfully: ${taskStatus}"
+                            }
+
+                            // Obtener analysisId y consultar Quality Gate
+                            def taskRes = sh(script: "curl -s -u ${SONAR_TOKEN}: \"${sonarHost}/api/ce/task?id=${env.SONAR_CE_TASK_ID}\"", returnStdout: true).trim()
+                            def ma = taskRes =~ /\"analysisId\"\s*:\s*\"([0-9a-f\\-]+)\"/
+                            def analysisId = ma ? ma[0][1] : ''
+                            if (!analysisId) {
+                                error 'Could not obtain analysisId from SonarQube CE task.'
+                            }
+
+                            def qgres = sh(script: "curl -s -u ${SONAR_TOKEN}: \"${sonarHost}/api/qualitygates/project_status?analysisId=${analysisId}\"", returnStdout: true).trim()
+                            def mq = qgres =~ /\"status\"\s*:\s*\"([A-Z]+)\"/
+                            def qgStatus = mq ? mq[0][1] : ''
+                            echo "Quality Gate status (API): ${qgStatus}"
+                            if (qgStatus != 'OK') {
+                                error "Quality Gate failed: ${qgStatus}"
+                            }
                         }
                     }
                 }
