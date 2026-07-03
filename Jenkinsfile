@@ -29,6 +29,10 @@ pipeline {
 
         SONAR_PROJECT_KEY  = 'spaceup'
         SONAR_PROJECT_NAME = 'spaceup'
+        // Esta credencial debe existir en Jenkins como Secret Text.
+        // Si ves un error como "Could not find credentials entry with ID 'sonarqube-...'",
+        // revisa que el ID sea exactamente 'sonarqube-token'.
+        SONAR_CREDENTIALS_ID = 'sonarqube-token'
     }
 
     stages {
@@ -98,7 +102,8 @@ pipeline {
             steps {
                 echo '📊 === ANALIZANDO CÓDIGO CON SONARQUBE ==='
                 withSonarQubeEnv('sonarqube') {
-                    withCredentials([string(credentialsId: 'sonarqube-tokennnnnnnnnnnnnnnnnnnnnnnnnnnnnnnn', variable: 'SONAR_TOKEN')]) {
+                    // Usar la credencial configurada en Jenkins (tipo Secret Text)
+                    withCredentials([string(credentialsId: "${SONAR_CREDENTIALS_ID}", variable: 'SONAR_TOKEN')]) {
                         sh """
                             sonar-scanner \
                                 -Dsonar.projectKey=${SONAR_PROJECT_KEY} \
@@ -117,9 +122,15 @@ pipeline {
 
         stage('Quality Gate') {
             steps {
-                sleep(15)
-                timeout(time: 15, unit: 'MINUTES') {
-                    waitForQualityGate abortPipeline: false
+                // `waitForQualityGate` necesita que SonarQube llame al webhook de Jenkins.
+                // Ajustamos timeout y abortamos el pipeline si el gate falla.
+                timeout(time: 10, unit: 'MINUTES') {
+                    script {
+                        def qg = waitForQualityGate()
+                        if (qg.status != 'OK') {
+                            error "Quality Gate failed: ${qg.status}"
+                        }
+                    }
                 }
             }
         }

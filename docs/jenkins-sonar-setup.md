@@ -44,6 +44,7 @@ curl -X POST \
 - Si Sonar no alcanza a enviar el webhook: revisar conectividad desde Sonar hacia Jenkins, puertos y DNS/hosts entre contenedores.
 - Si Jenkins requiere CSRF token para el webhook, el endpoint `/sonarqube-webhook/` del plugin SonarQube debería aceptar solicitudes sin autenticación adicional; asegúrate de tener la versión del plugin.
 - Verifica que el `SONAR_CREDENTIALS_ID` en `Jenkinsfile` coincida con el ID en Jenkins.
+- Si ves el error `Could not find credentials entry with ID 'sonarqube-tokennnn...'`, entonces la configuración de credencial usada por el job no existe o está mal escrita. Crea la credencial con ID `sonarqube-token` o actualiza el valor en el `Jenkinsfile`/parámetros de build.
 
 7) Opcional: crear credencial via Jenkins CLI (si tienes acceso al servidor Jenkins)
 
