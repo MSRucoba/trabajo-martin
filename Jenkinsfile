@@ -97,19 +97,20 @@ pipeline {
         stage('SonarQube Analysis') {
             steps {
                 echo '📊 === ANALIZANDO CÓDIGO CON SONARQUBE ==='
-                withCredentials([string(credentialsId: 'sonarqube-tokennnnnnnnnnnnnnnnnnnnnnnnnnnnnnnn', variable: 'SONAR_TOKEN')]) {
-                    sh """
-                        sonar-scanner \
-                            -Dsonar.projectKey=${SONAR_PROJECT_KEY} \
-                            -Dsonar.projectName=${SONAR_PROJECT_NAME} \
-                            -Dsonar.sources=${BACKEND_DIR}/src,${FRONTEND_DIR}/src \
-                            -Dsonar.exclusions=**/node_modules/**,**/dist/**,**/coverage/**,**/*.spec.ts,**/*.entity.ts,**/seeds/** \
-                            -Dsonar.javascript.lcov.reportPaths=${BACKEND_DIR}/coverage/lcov.info \
-                            -Dsonar.coverage.exclusions=${FRONTEND_DIR}/src/** \
-                            -Dsonar.cpd.exclusions=${FRONTEND_DIR}/src/** \
-                            -Dsonar.host.url=http://sonarqube:9000 \
-                            -Dsonar.token=\${SONAR_TOKEN}
-                    """
+                withSonarQubeEnv('sonarqube') {
+                    withCredentials([string(credentialsId: 'sonarqube-tokennnnnnnnnnnnnnnnnnnnnnnnnnnnnnnn', variable: 'SONAR_TOKEN')]) {
+                        sh """
+                            sonar-scanner \
+                                -Dsonar.projectKey=${SONAR_PROJECT_KEY} \
+                                -Dsonar.projectName=${SONAR_PROJECT_NAME} \
+                                -Dsonar.sources=${BACKEND_DIR}/src,${FRONTEND_DIR}/src \
+                                -Dsonar.exclusions=**/node_modules/**,**/dist/**,**/coverage/**,**/*.spec.ts,**/*.entity.ts,**/seeds/** \
+                                -Dsonar.javascript.lcov.reportPaths=${BACKEND_DIR}/coverage/lcov.info \
+                                -Dsonar.coverage.exclusions=${FRONTEND_DIR}/src/** \
+                                -Dsonar.cpd.exclusions=${FRONTEND_DIR}/src/** \
+                                -Dsonar.token=\${SONAR_TOKEN}
+                        """
+                    }
                 }
             }
         }
